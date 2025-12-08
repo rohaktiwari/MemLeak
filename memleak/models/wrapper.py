@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -42,33 +42,46 @@ class ModelWrapper:
             logits_list.append(logits.cpu())
         return torch.cat(logits_list, dim=0)
 
-    def compute_losses(self, texts: List[str]) -> List[float]:
+    def compute_losses(self, texts: List[str], labels: Optional[List[int]] = None) -> List[float]:
+        """Compute per-sample losses. For classification, true labels are required."""
         losses: List[float] = []
+        if self.model_type == "sequence-classification" and labels is None:
+            raise ValueError("compute_losses requires labels for classification models.")
+
         for i in range(0, len(texts), self.batch_size):
             batch = texts[i : i + self.batch_size]
             inputs = self._tokenize(batch).to(self.device)
             with torch.no_grad():
                 if self.model_type == "sequence-classification":
+                    batch_labels = torch.tensor(labels[i : i + len(batch)], device=self.device)
                     outputs = self.model(**inputs)
                     logits = outputs.logits
-                    probs = F.softmax(logits, dim=-1)
-                    # pseudo-label with model prediction
-                    pseudo_labels = probs.argmax(dim=-1)
-                    loss = F.cross_entropy(logits, pseudo_labels, reduction="none")
+                    loss = F.cross_entropy(logits, batch_labels, reduction="none")
                 else:
-                    labels = inputs["input_ids"]
-                    outputs = self.model(**inputs, labels=labels)
-                    # average token-level loss per example
-                    loss = outputs.loss.detach()
-                    if loss.dim() == 0:
-                        loss = loss.repeat(len(batch))
-                losses.extend(loss.cpu().tolist())
+                    input_ids = inputs["input_ids"]
+                    # next-token prediction: shift inputs by one
+                    labels_tokens = input_ids[:, 1:].contiguous()
+                    logits = self.model(**inputs).logits[:, :-1, :].contiguous()
+                    loss = F.cross_entropy(
+                        logits.view(-1, logits.size(-1)),
+                        labels_tokens.view(-1),
+                        reduction="none",
+                    )
+                    # reshape back to per-example mean loss
+                    loss = loss.view(logits.size(0), -1).mean(dim=1)
+            losses.extend(loss.cpu().tolist())
         return losses
 
-    def compute_features(self, texts: List[str]) -> List[Dict[str, float]]:
-        logits = self.predict_logits(texts)
+    def compute_features(
+        self,
+        texts: List[str],
+        labels: Optional[List[int]] = None,
+        logits: Optional[torch.Tensor] = None,
+        losses: Optional[List[float]] = None,
+    ) -> List[Dict[str, float]]:
+        logits = logits if logits is not None else self.predict_logits(texts)
         probs = F.softmax(logits, dim=-1)
-        losses = self.compute_losses(texts)
+        losses = losses if losses is not None else self.compute_losses(texts, labels=labels)
         features = []
         for idx in range(len(texts)):
             prob = probs[idx]
@@ -88,5 +101,6 @@ class ModelWrapper:
 
     def close(self) -> None:
         del self.model
-        torch.cuda.empty_cache()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 

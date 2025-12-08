@@ -27,12 +27,25 @@ class MetricBasedAttack:
         combined = 0.4 * loss_n + 0.2 * conf_n + 0.2 * margin_n + 0.2 * ent_n
         return combined
 
-    def run(self, train_texts: Iterable[str], test_texts: Iterable[str]) -> pd.DataFrame:
+    def run(self, train_texts: Iterable[str], test_texts: Iterable[str], train_labels=None, test_labels=None) -> pd.DataFrame:
         train = list(train_texts)
         test = list(test_texts)
-        train_feats = self.wrapper.compute_features(train)
-        test_feats = self.wrapper.compute_features(test)
-        all_feats = train_feats + test_feats
+        train_labels = list(train_labels) if train_labels is not None else None
+        test_labels = list(test_labels) if test_labels is not None else None
+
+        combined_texts = train + test
+        combined_labels = None
+        if train_labels is not None and test_labels is not None:
+            combined_labels = train_labels + test_labels
+
+        logits = self.wrapper.predict_logits(combined_texts)
+        losses = self.wrapper.compute_losses(combined_texts, labels=combined_labels) if combined_labels is not None else None
+        all_feats = self.wrapper.compute_features(
+            combined_texts,
+            labels=combined_labels,
+            logits=logits,
+            losses=losses,
+        )
 
         combined_scores = self._combine(all_feats)
         train_scores = combined_scores[: len(train)]

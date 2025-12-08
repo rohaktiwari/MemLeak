@@ -17,11 +17,13 @@ class LossBasedAttack:
         normalized = min_max_normalize([-l for l in losses])  # lower loss → higher membership
         return normalized
 
-    def run(self, train_texts: Iterable[str], test_texts: Iterable[str]) -> pd.DataFrame:
+    def run(self, train_texts: Iterable[str], test_texts: Iterable[str], train_labels=None, test_labels=None) -> pd.DataFrame:
         train = list(train_texts)
         test = list(test_texts)
-        train_losses = self.wrapper.compute_losses(train)
-        test_losses = self.wrapper.compute_losses(test)
+        if train_labels is None or test_labels is None:
+            raise ValueError("LossBasedAttack requires train_labels and test_labels for classification models.")
+        train_losses = self.wrapper.compute_losses(train, labels=list(train_labels))
+        test_losses = self.wrapper.compute_losses(test, labels=list(test_labels))
 
         train_scores = self._score(train_losses)
         test_scores = self._score(test_losses)
