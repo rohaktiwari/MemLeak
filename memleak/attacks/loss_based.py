@@ -20,10 +20,19 @@ class LossBasedAttack:
     def run(self, train_texts: Iterable[str], test_texts: Iterable[str], train_labels=None, test_labels=None) -> pd.DataFrame:
         train = list(train_texts)
         test = list(test_texts)
-        if train_labels is None or test_labels is None:
-            raise ValueError("LossBasedAttack requires train_labels and test_labels for classification models.")
-        train_losses = self.wrapper.compute_losses(train, labels=list(train_labels))
-        test_losses = self.wrapper.compute_losses(test, labels=list(test_labels))
+
+        is_classification = self.wrapper.model_type == "sequence-classification"
+        if is_classification:
+            if train_labels is None or test_labels is None:
+                raise ValueError(
+                    "LossBasedAttack requires both train_labels and test_labels when model_type='sequence-classification'."
+                )
+            train_losses = self.wrapper.compute_losses(train, labels=list(train_labels))
+            test_losses = self.wrapper.compute_losses(test, labels=list(test_labels))
+        else:
+            # causal LM: labels derived from input_ids internally
+            train_losses = self.wrapper.compute_losses(train, labels=None)
+            test_losses = self.wrapper.compute_losses(test, labels=None)
 
         train_scores = self._score(train_losses)
         test_scores = self._score(test_losses)

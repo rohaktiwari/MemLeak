@@ -89,9 +89,11 @@ class MembershipTester:
         conf_attack = ConfidenceBasedAttack(self.wrapper)
         metric_attack = MetricBasedAttack(self.wrapper)
 
-        loss_df = loss_attack.run(train_list, test_list, train_labels=train_labels, test_labels=test_labels) if train_labels is not None else None
+        have_labels = train_labels is not None and test_labels is not None
+
+        loss_df = loss_attack.run(train_list, test_list, train_labels=train_labels, test_labels=test_labels) if have_labels else None
         conf_df = conf_attack.run(train_list, test_list)
-        metric_df = metric_attack.run(train_list, test_list, train_labels=train_labels, test_labels=test_labels) if train_labels is not None else None
+        metric_df = metric_attack.run(train_list, test_list, train_labels=train_labels, test_labels=test_labels) if have_labels else None
 
         attack_frames = {"confidence": conf_df}
         if loss_df is not None:
