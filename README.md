@@ -1,77 +1,74 @@
-# MemLeak — Membership Inference Toolkit
+<<<<<<< Current (Your changes)
+# 🔐 MemLeak Research Framework
 
-MemLeak is a production-ready Python toolkit and Streamlit app that detects **membership inference attacks** against HuggingFace models. It loads any transformer checkpoint, runs three complementary attacks, quantifies per-sample leak probability, and surfaces privacy risk with visual dashboards plus mitigation guidance.
+MemLeak is a research-grade framework for benchmarking Membership Inference Attacks (MIA) and Defenses.
 
 ## Features
-- Load HuggingFace models and tokenizers (local path or hub id)
-- Three attacks: loss-based, confidence-based, metric-based (combined features)
-- Per-example membership probability, confidence, and ranking
-- Privacy risk score (0–100) and mitigation recommendations
-- Streamlit UI for uploads (model id/path + dataset) and one-click analysis
-- Plotly dashboards: leak probability scatter, risk heatmap, ROC-like curves
-- Example scripts for GPT-2, BERT, and a medical-model case study
+- **Modular Architecture**: Separate modules for `attacks`, `defenses`, `models`, and `datasets`.
+- **Reproducible Experiments**: YAML config-driven experiments.
+- **State-of-the-Art Defenses**: DP-SGD (Opacus), Label Smoothing, Temperature Scaling.
+- **Benchmarking**: Automated ROC generation and metric logging.
 
-## Why Membership Inference Matters
-Models can overfit and memorize sensitive training points. Adversaries test whether a candidate sample was part of training by comparing model behavior on train vs. non-train distributions. Lower loss / higher confidence usually signals membership. MemLeak operationalizes these signals to measure leak risk and suggest mitigations.
-
-## Quickstart
+## Installation
 ```bash
-git clone https://github.com/your-org/memleak
-cd memleak
+pip install -r requirements.txt
 pip install -e .
-streamlit run app.py
 ```
 
-## Python API
+## Running Experiments
+To run a specific experiment configuration:
+```bash
+python run_experiment.py --config configs/cifar10/shadow.yaml
+```
+
+## Structure
+```
+memleak/
+  attacks/      # MIA implementations (Threshold, Shadow)
+  defenses/     # Training and Post-hoc defenses
+  models/       # Architectures
+  engine.py     # Training loop
+experiments/    # Analysis scripts
+configs/        # Experiment configurations
+docs/           # Documentation and Paper
+```
+
+## Research Analysis
+To analyze the relationship between Generalization Gap and MIA:
+```bash
+# Script coming soon (or usage manual via config variations)
+```
+
+## Author
+Rohak Tiwari | Virginia Tech
+=======
+# 🔐 MemLeak
+
+**MemLeak is a Python toolkit that detects membership inference vulnerabilities in machine learning models—where attackers can determine if specific data was used during training. This is critical for healthcare AI (patient record leaks), financial models (transaction exposure), and any system trained on private data. The tool works with any HuggingFace transformer (GPT-2, BERT, custom models), runs three types of privacy attacks (loss-based, confidence-based, metric-based), and generates interactive dashboards showing per-sample leak probabilities, privacy risk scores (0-100), and actionable mitigation recommendations like differential privacy parameters and regularization adjustments. Built during research on AI safety at Virginia Tech, MemLeak operationalizes foundational work by Shokri et al. and Carlini et al. on unintended memorization in neural networks, providing both a Python API and Streamlit web interface for auditing production models.**
+
+## Quick Start
+```bash
+git clone https://github.com/rohaktiwari/memleak
+cd memleak
+pip install -e .
+```
 ```python
 from memleak import MembershipTester
 
-train = ["Alice has diabetes", "The cat sat on the mat"]
-test = ["Bob plays guitar", "This is unseen"]
-
-tester = MembershipTester(model="bert-base-uncased", max_length=128)
-report = tester.run_attacks(train, test)
-
-print(report.summary.head())
-report.visualize()  # opens Plotly figures
-report.recommendations()  # mitigation hints
+tester = MembershipTester("gpt2")
+report = tester.run_attacks(train_data=["..."], test_data=["..."])
+print(f"Risk: {report.risk_score}/100")
+report.visualize()
+report.recommendations()
 ```
 
-## Running the Web App
-```bash
-streamlit run app.py
-# On HuggingFace Spaces: point the Space to app.py
-```
+Web interface: `streamlit run app.py`
 
-## Examples
-- `examples/test_gpt2.py`
-- `examples/test_bert.py`
-- `examples/medical_model_case_study.py`
+Examples: `python examples/test_gpt2.py`, `python examples/test_bert.py`, `python examples/medical_model_case_study.py`
 
-## Attacks Implemented
-- **Loss-based:** compare per-sample loss distributions between train/test; lower loss → higher membership probability.
-- **Confidence-based:** uses max softmax probability; higher confidence → higher membership probability.
-- **Metric-based:** combines loss, entropy, margin, and optional gradient proxies via a simple learned-style scorer.
+---
 
-## Mitigation Guidance
-- Differential privacy (ε targets per risk level)
-- Regularization tweaks (dropout, weight decay)
-- Data augmentation suggestions
-- Vulnerable layer hints from confidence/entropy patterns
+**Author:** Rohak Tiwari | CS @ Virginia Tech | [Google Scholar](https://scholar.google.com/citations?user=WRFLGrwAAAAJ&hl=en) | rohaktiwari@vt.edu
 
-## Tests
-```bash
-pytest -q
-```
-
-## Citation
-If you use MemLeak in research, cite:
-```
-@software{memleak2025,
-  title  = {MemLeak: Membership Inference Detection Toolkit},
-  author = {Your Name},
-  year   = {2025},
-  url    = {https://github.com/your-org/memleak}
-}
-```
-
+**License:** MIT
+>>>>>>> Incoming (Background Agent changes)
