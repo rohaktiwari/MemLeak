@@ -33,6 +33,12 @@ class MetricBasedAttack:
         train_labels = list(train_labels) if train_labels is not None else None
         test_labels = list(test_labels) if test_labels is not None else None
 
+        is_classification = self.wrapper.model_type == "sequence-classification"
+        if is_classification and (train_labels is None or test_labels is None):
+            raise ValueError(
+                "MetricBasedAttack requires both train_labels and test_labels when model_type='sequence-classification'."
+            )
+
         combined_texts = train + test
         combined_labels = None
         if train_labels is not None and test_labels is not None:
